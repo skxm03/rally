@@ -2,6 +2,8 @@ import { Router } from 'express';
 import authRoutes from './auth/auth.routes.js';
 import userRoutes from './users/user.routes.js';
 import communityRoutes from './communities/community.routes.js';
+import uploadRoutes from './upload/upload.routes.js';
+import postRoutes from './posts/post.routes.js';
 
 const apiRouter = Router();
 
@@ -18,5 +20,7 @@ apiRouter.get('/health', (req, res) => {
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/users', userRoutes);
 apiRouter.use('/communities', communityRoutes);
+apiRouter.use('/upload', uploadRoutes);
+apiRouter.use('/posts', postRoutes);
 
 export default apiRouter;

@@ -1,4 +1,5 @@
 import * as userRepo from './user.repository.js';
+import { getPostsByAuthor } from '../posts/post.service.js';
 
 export const formatUserProfile = (row) => {
   if (!row) return null;
@@ -12,7 +13,7 @@ export const formatUserProfile = (row) => {
   };
 };
 
-export const getUserProfile = async (username) => {
+export const getUserProfile = async (username, currentUserId = null) => {
   if (!username) {
     const error = new Error('Username is required');
     error.status = 400;
@@ -26,9 +27,11 @@ export const getUserProfile = async (username) => {
     throw error;
   }
 
+  const posts = await getPostsByAuthor(row.id, currentUserId);
+
   return {
     user: formatUserProfile(row),
-    posts: [],
+    posts,
     comments: [],
   };
 };
