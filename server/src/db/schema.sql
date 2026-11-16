@@ -83,9 +83,11 @@ CREATE TABLE IF NOT EXISTS comment_votes (
 -- Indexes for performance & integrity
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_lower_username ON users(LOWER(username));
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_lower_email ON users(LOWER(email));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_communities_lower_name ON communities(LOWER(name));
+CREATE INDEX IF NOT EXISTS idx_members_user_id ON community_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_members_community_id ON community_members(community_id);
 CREATE INDEX IF NOT EXISTS idx_posts_community_id ON posts(community_id);
 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_posts_score ON posts(score DESC);
 CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id);
 CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON comments(parent_comment_id);
-CREATE INDEX IF NOT EXISTS idx_members_user_id ON community_members(user_id);

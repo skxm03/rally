@@ -7,7 +7,7 @@
 	"scripts": {
 		"start": "node src/index.js",
 		"dev": "nodemon src/index.js",
-		"test": "NODE_ENV=test node --test test/**/*.test.js"
+		"test": "NODE_ENV=test node --test --test-concurrency=1 test/**/*.test.js"
 	},
 	"keywords": [
 		"rally",

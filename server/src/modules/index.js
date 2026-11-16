@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import authRoutes from './auth/auth.routes.js';
+import userRoutes from './users/user.routes.js';
+import communityRoutes from './communities/community.routes.js';
 
 const apiRouter = Router();
 
@@ -14,5 +16,7 @@ apiRouter.get('/health', (req, res) => {
 
 // Mount modules
 apiRouter.use('/auth', authRoutes);
+apiRouter.use('/users', userRoutes);
+apiRouter.use('/communities', communityRoutes);
 
 export default apiRouter;
