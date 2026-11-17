@@ -1,5 +1,6 @@
 import * as userRepo from './user.repository.js';
 import { getPostsByAuthor } from '../posts/post.service.js';
+import { getCommentsByAuthor } from '../comments/comment.service.js';
 
 export const formatUserProfile = (row) => {
   if (!row) return null;
@@ -28,11 +29,12 @@ export const getUserProfile = async (username, currentUserId = null) => {
   }
 
   const posts = await getPostsByAuthor(row.id, currentUserId);
+  const comments = await getCommentsByAuthor(row.id);
 
   return {
     user: formatUserProfile(row),
     posts,
-    comments: [],
+    comments,
   };
 };
 
