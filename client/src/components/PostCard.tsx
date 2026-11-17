@@ -7,20 +7,32 @@ import {
   Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { Post } from '../types/post';
 import { postApi } from '../api/posts';
 import { api } from '../api/client';
 import { formatRelativeTime } from '../utils/date';
+import { useAuth } from '../context/auth';
 import { theme } from '../theme';
 
 interface PostCardProps {
   post: Post;
   onPress?: () => void;
   onVoteChange?: (newScore: number, newUserVote: number) => void;
+  onDelete?: () => void;
 }
 
-export const PostCard: React.FC<PostCardProps> = ({ post, onPress, onVoteChange }) => {
+export const PostCard: React.FC<PostCardProps> = ({
+  post,
+  onPress,
+  onVoteChange,
+  onDelete,
+}) => {
+  const router = useRouter();
+  const { user } = useAuth();
+  const isAuthor = Boolean(user && user.id === post.authorId);
+
   const [currentScore, setCurrentScore] = useState(post.score);
   const [currentUserVote, setCurrentUserVote] = useState(post.userVote);
   const [isVoting, setIsVoting] = useState(false);
@@ -79,6 +91,28 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPress, onVoteChange 
     }
   };
 
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Post',
+      'Are you sure you want to delete this post? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await postApi.deletePost(post.id);
+              onDelete?.();
+            } catch (err: any) {
+              Alert.alert('Delete failed', err.message || 'Could not delete post.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const resolvedImageUrl = api.getMediaUrl(post.imageUrl);
   const communityName = post.community?.name || 'community';
   const authorName = post.author?.displayName || post.author?.username || 'anonymous';
@@ -90,17 +124,43 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPress, onVoteChange 
       onPress={onPress}
       activeOpacity={onPress ? 0.75 : 1}
     >
-      {/* Context line: Community, author, time */}
+      {/* Context line: Community, author, time, author controls */}
       <View style={styles.metaRow}>
-        <Text style={styles.communityName}>c/{communityName}</Text>
-        <Text style={styles.metaDivider}>·</Text>
-        <Text style={styles.authorName}>u/{authorName}</Text>
-        {relativeTime ? (
-          <>
-            <Text style={styles.metaDivider}>·</Text>
-            <Text style={styles.timeText}>{relativeTime}</Text>
-          </>
-        ) : null}
+        <View style={styles.metaInfo}>
+          <TouchableOpacity
+            onPress={() => router.push(`/community/${communityName}`)}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          >
+            <Text style={styles.communityName}>c/{communityName}</Text>
+          </TouchableOpacity>
+          <Text style={styles.metaDivider}>·</Text>
+          <Text style={styles.authorName}>u/{authorName}</Text>
+          {relativeTime ? (
+            <>
+              <Text style={styles.metaDivider}>·</Text>
+              <Text style={styles.timeText}>{relativeTime}</Text>
+            </>
+          ) : null}
+        </View>
+
+        {isAuthor && (
+          <View style={styles.authorActions}>
+            <TouchableOpacity
+              onPress={() => router.push(`/post/edit/${post.id}`)}
+              style={styles.authorActionButton}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            >
+              <Feather name="edit-2" size={13} color={theme.colors.inkSecondary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleDelete}
+              style={styles.authorActionButton}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            >
+              <Feather name="trash-2" size={13} color={theme.colors.error} />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Post Title */}
@@ -187,7 +247,23 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 6,
+  },
+  metaInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    flex: 1,
+  },
+  authorActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+    marginLeft: theme.spacing.sm,
+  },
+  authorActionButton: {
+    padding: 2,
   },
   communityName: {
     ...theme.typography.captionMedium,

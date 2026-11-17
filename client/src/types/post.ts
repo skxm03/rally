@@ -25,6 +25,23 @@ export interface Post {
   community?: PostCommunity;
 }
 
+export interface CreatePostPayload {
+  communityId: number;
+  title: string;
+  content?: string | null;
+  imageUrl?: string | null;
+}
+
+export interface UpdatePostPayload {
+  title: string;
+  content?: string | null;
+  imageUrl?: string | null;
+}
+
+export interface PostResponse {
+  post: Post;
+}
+
 export interface FeedPagination {
   page: number;
   limit: number;

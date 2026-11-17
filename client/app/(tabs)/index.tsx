@@ -175,6 +175,7 @@ export default function FeedScreen() {
             <PostCard
               post={item}
               onVoteChange={(score, vote) => handleVoteChange(item.id, score, vote)}
+              onDelete={() => setPosts((prev) => prev.filter((p) => p.id !== item.id))}
             />
           )}
           refreshControl={
