@@ -1,5 +1,8 @@
 import { test, describe, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import app from '../src/app.js';
 import pool from '../src/config/db.js';
 
@@ -342,8 +345,55 @@ describe('Posts, Image Uploads, and Voting API (Phase 3)', () => {
     assert.strictEqual(getRes.status, 404);
   });
 
-  // --- SLICE 5: Voting, Score, and Karma Tracking ---
-  test('POST /api/posts/:id/vote - handles upvote, toggle cancel, and reverse downvote atomically with karma', async () => {
+  test('DELETE /api/posts/:id - deletes associated image file from disk', async () => {
+    // 1. Upload an image
+    const formData = new FormData();
+    const fakeImageBytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);
+    const fileBlob = new Blob([fakeImageBytes], { type: 'image/jpeg' });
+    formData.append('image', fileBlob, 'test-delete.jpg');
+
+    const uploadUrl = baseUrl.replace('/api/posts', '/api/upload');
+    const uploadRes = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authorToken}` },
+      body: formData,
+    });
+    const { imageUrl } = await uploadRes.json();
+    assert.ok(imageUrl);
+
+    const uploadsDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../uploads');
+    const filename = path.basename(imageUrl);
+    const diskPath = path.join(uploadsDir, filename);
+    assert.strictEqual(fs.existsSync(diskPath), true);
+
+    // 2. Create post with image
+    const createRes = await fetch(`${baseUrl}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authorToken}`,
+      },
+      body: JSON.stringify({
+        communityId: testCommunity.id,
+        title: 'Post with image to delete',
+        imageUrl,
+      }),
+    });
+    const { post } = await createRes.json();
+
+    // 3. Delete post
+    const deleteRes = await fetch(`${baseUrl}/${post.id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${authorToken}` },
+    });
+    assert.strictEqual(deleteRes.status, 200);
+
+    // 4. Assert disk file was unlinked
+    assert.strictEqual(fs.existsSync(diskPath), false);
+  });
+
+  // --- SLICE 5: Voting, Score, and Karma Tracking (Reddit Style Score Floor >= 0) ---
+  test('POST /api/posts/:id/vote - handles upvote, toggle cancel, and downvote clamping at 0 atomically with karma', async () => {
     // 1. Author publishes post
     const createRes = await fetch(`${baseUrl}`, {
       method: 'POST',
@@ -409,7 +459,7 @@ describe('Posts, Image Uploads, and Voting API (Phase 3)', () => {
     userData = await userRes.json();
     assert.strictEqual(userData.user.karma, 0);
 
-    // 4. Member casts downvote (-1) -> score is -1, karma is -1
+    // 4. Member casts downvote (-1) on 0-score post -> Reddit rule: post score floors at 0, author karma stays 0
     const downRes = await fetch(`${baseUrl}/${post.id}/vote`, {
       method: 'POST',
       headers: {
@@ -420,14 +470,14 @@ describe('Posts, Image Uploads, and Voting API (Phase 3)', () => {
     });
     const downData = await downRes.json();
     assert.strictEqual(downRes.status, 200);
-    assert.strictEqual(downData.score, -1);
+    assert.strictEqual(downData.score, 0); // Floored at 0, not -1
     assert.strictEqual(downData.voteValue, -1);
 
     userRes = await fetch(`${usersBaseUrl}/post_author`);
     userData = await userRes.json();
-    assert.strictEqual(userData.user.karma, -1);
+    assert.strictEqual(userData.user.karma, 0); // Karma does not drop below 0 on un-upvoted post
 
-    // 5. Member flips vote directly from -1 to +1 -> delta is +2, score is 1, karma is 1
+    // 5. Member flips vote directly from -1 to +1 -> net score becomes 1, karma becomes 1
     const flipRes = await fetch(`${baseUrl}/${post.id}/vote`, {
       method: 'POST',
       headers: {
@@ -444,6 +494,24 @@ describe('Posts, Image Uploads, and Voting API (Phase 3)', () => {
     userRes = await fetch(`${usersBaseUrl}/post_author`);
     userData = await userRes.json();
     assert.strictEqual(userData.user.karma, 1);
+
+    // 6. Author upvotes own post -> score becomes 2, karma becomes 2
+    const authorVoteRes = await fetch(`${baseUrl}/${post.id}/vote`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authorToken}`,
+      },
+      body: JSON.stringify({ voteValue: 1 }),
+    });
+    const authorVoteData = await authorVoteRes.json();
+    assert.strictEqual(authorVoteRes.status, 200);
+    assert.strictEqual(authorVoteData.score, 2);
+    assert.strictEqual(authorVoteData.voteValue, 1);
+
+    userRes = await fetch(`${usersBaseUrl}/post_author`);
+    userData = await userRes.json();
+    assert.strictEqual(userData.user.karma, 2);
   });
 
   // --- Integration: User Profile Posts List ---

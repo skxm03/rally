@@ -29,8 +29,8 @@ export const getPost = async (req, res, next) => {
 export const updatePost = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, content } = req.body;
-    const result = await postService.updatePost(id, req.user.id, { title, content });
+    const { title, content, imageUrl } = req.body;
+    const result = await postService.updatePost(id, req.user.id, { title, content, imageUrl });
     res.status(200).json(result);
   } catch (error) {
     next(error);

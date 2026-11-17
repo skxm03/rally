@@ -36,15 +36,16 @@ export const isCommunityMember = async (communityId, userId) => {
   return Boolean(result.rows[0]?.is_member);
 };
 
-export const updatePost = async (postId, { title, content }) => {
+export const updatePost = async (postId, { title, content, imageUrl }) => {
   const result = await query(
     `UPDATE posts
      SET title = COALESCE($1, title),
          content = COALESCE($2, content),
+         image_url = COALESCE($3, image_url),
          updated_at = CURRENT_TIMESTAMP
-     WHERE id = $3
+     WHERE id = $4
      RETURNING id, community_id, author_id, title, content, image_url, score, created_at, updated_at`,
-    [title, content, postId]
+    [title, content, imageUrl, postId]
   );
   return result.rows[0] || null;
 };
@@ -102,6 +103,7 @@ export const handleVote = async ({ postId, userId, voteValue }) => {
       return null;
     }
     const post = postRes.rows[0];
+    const oldScore = Number(post.score) || 0;
 
     const voteRes = await client.query(
       'SELECT vote_value FROM post_votes WHERE post_id = $1 AND user_id = $2 FOR UPDATE',
@@ -109,7 +111,6 @@ export const handleVote = async ({ postId, userId, voteValue }) => {
     );
     const existingVote = voteRes.rows[0]?.vote_value || 0;
 
-    let scoreDelta = 0;
     let finalVote = 0;
 
     if (existingVote === 0) {
@@ -117,34 +118,40 @@ export const handleVote = async ({ postId, userId, voteValue }) => {
         'INSERT INTO post_votes (post_id, user_id, vote_value) VALUES ($1, $2, $3)',
         [postId, userId, voteValue]
       );
-      scoreDelta = voteValue;
       finalVote = voteValue;
     } else if (existingVote === voteValue) {
       await client.query(
         'DELETE FROM post_votes WHERE post_id = $1 AND user_id = $2',
         [postId, userId]
       );
-      scoreDelta = -voteValue;
       finalVote = 0;
     } else {
       await client.query(
         'UPDATE post_votes SET vote_value = $3, updated_at = CURRENT_TIMESTAMP WHERE post_id = $1 AND user_id = $2',
         [postId, userId, voteValue]
       );
-      scoreDelta = voteValue - existingVote;
       finalVote = voteValue;
     }
 
-    const updatedPostRes = await client.query(
-      'UPDATE posts SET score = score + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING score',
-      [scoreDelta, postId]
+    // Reddit post score rule: post score cannot drop below 0
+    const sumRes = await client.query(
+      'SELECT GREATEST(0, COALESCE(SUM(vote_value), 0))::int AS new_score FROM post_votes WHERE post_id = $1',
+      [postId]
     );
-    const newScore = updatedPostRes.rows[0].score;
+    const newScore = sumRes.rows[0].new_score;
+    const scoreDelta = newScore - oldScore;
 
     await client.query(
-      'UPDATE users SET karma = karma + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [scoreDelta, post.author_id]
+      'UPDATE posts SET score = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [newScore, postId]
     );
+
+    if (scoreDelta !== 0) {
+      await client.query(
+        'UPDATE users SET karma = karma + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [scoreDelta, post.author_id]
+      );
+    }
 
     await client.query('COMMIT');
     return { newScore, finalVote };

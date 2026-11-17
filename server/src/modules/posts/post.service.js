@@ -1,5 +1,12 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import * as postRepo from './post.repository.js';
 import { findCommunityById } from '../communities/community.repository.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.join(__dirname, '../../../uploads');
 
 export const formatPost = (row) => {
   if (!row) return null;
@@ -100,7 +107,7 @@ export const getPostById = async (postId, currentUserId = null) => {
   return { post: formatPost(row) };
 };
 
-export const updatePost = async (postId, userId, { title, content }) => {
+export const updatePost = async (postId, userId, { title, content, imageUrl }) => {
   const numericId = parseInt(postId, 10);
   if (Number.isNaN(numericId) || numericId <= 0) {
     const error = new Error('Invalid post ID');
@@ -135,9 +142,25 @@ export const updatePost = async (postId, userId, { title, content }) => {
     ? (typeof content === 'string' && content.trim().length > 0 ? content.trim() : null)
     : post.content;
 
+  let cleanImageUrl = post.image_url;
+  if (imageUrl !== undefined) {
+    cleanImageUrl = imageUrl && typeof imageUrl === 'string' && imageUrl.trim().length > 0
+      ? imageUrl.trim()
+      : null;
+    if (post.image_url && post.image_url !== cleanImageUrl && post.image_url.startsWith('/uploads/')) {
+      try {
+        const oldFilename = path.basename(post.image_url);
+        await fs.promises.unlink(path.join(uploadsDir, oldFilename));
+      } catch {
+        // Ignore if old file missing
+      }
+    }
+  }
+
   const row = await postRepo.updatePost(numericId, {
     title: cleanTitle,
     content: cleanContent,
+    imageUrl: cleanImageUrl,
   });
 
   return { post: formatPost(row) };
@@ -165,6 +188,18 @@ export const deletePost = async (postId, userId) => {
   }
 
   await postRepo.deletePost(numericId);
+
+  // Unlink associated image file from disk to prevent orphaned files
+  if (post.image_url && typeof post.image_url === 'string' && post.image_url.startsWith('/uploads/')) {
+    try {
+      const filename = path.basename(post.image_url);
+      const filePath = path.join(uploadsDir, filename);
+      await fs.promises.unlink(filePath);
+    } catch {
+      // Ignore if file missing or already deleted
+    }
+  }
+
   return { message: 'Post deleted successfully' };
 };
 
