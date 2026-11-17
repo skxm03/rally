@@ -14,6 +14,8 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { communityApi } from '../../src/api/communities';
+import { Button } from '../../src/components/Button';
+import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { theme } from '../../src/theme';
 
 export default function CreateCommunityScreen() {
@@ -58,16 +60,11 @@ export default function CreateCommunityScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Top Nav */}
-      <View style={styles.topNav}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-          disabled={isSubmitting}
-        >
-          <Feather name="arrow-left" size={20} color={theme.colors.ink} />
-        </TouchableOpacity>
-        <Text style={styles.navTitle}>New Community</Text>
-      </View>
+      <ScreenHeader
+        title="New Community"
+        showBack
+        onBack={() => !isSubmitting && router.back()}
+      />
 
       <KeyboardAvoidingView
         style={styles.container}
@@ -134,18 +131,14 @@ export default function CreateCommunityScreen() {
               <Text style={styles.hintText}>Up to 1000 characters.</Text>
             </View>
 
-            <TouchableOpacity
-              style={[styles.submitButton, isSubmitting && styles.buttonDisabled]}
+            <Button
+              title="Create community"
+              size="lg"
+              fullWidth
+              loading={isSubmitting}
               onPress={handleSubmit}
-              disabled={isSubmitting}
-              activeOpacity={0.8}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color={theme.colors.primaryContrast} />
-              ) : (
-                <Text style={styles.submitButtonText}>Create community</Text>
-              )}
-            </TouchableOpacity>
+              style={{ marginTop: theme.spacing.md }}
+            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

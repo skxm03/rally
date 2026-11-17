@@ -9,10 +9,12 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { CommunityCard } from '../../src/components/CommunityCard';
+import { ScreenHeader } from '../../src/components/ScreenHeader';
+import { Button } from '../../src/components/Button';
 import { communityApi } from '../../src/api/communities';
 import { Community } from '../../src/types/community';
 import { theme } from '../../src/theme';
@@ -40,9 +42,11 @@ export default function CommunitiesScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchCommunities();
-  }, [fetchCommunities]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchCommunities();
+    }, [fetchCommunities])
+  );
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -62,21 +66,22 @@ export default function CommunitiesScreen() {
   });
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {/* Top Header */}
-      <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <Text style={styles.pageTitle}>Explore</Text>
-          <TouchableOpacity
-            style={styles.createButton}
+      <ScreenHeader
+        title="Explore"
+        borderBottom={false}
+        rightAction={
+          <Button
+            title="Create"
+            size="sm"
+            icon={<Feather name="plus" size={14} color={theme.colors.primaryContrast} />}
             onPress={() => router.push('/community/create')}
-            activeOpacity={0.8}
-          >
-            <Feather name="plus" size={16} color={theme.colors.primaryContrast} />
-            <Text style={styles.createButtonText}>Create</Text>
-          </TouchableOpacity>
-        </View>
+          />
+        }
+      />
 
+      <View style={styles.searchContainer}>
         {/* Search bar */}
         <View style={styles.searchBar}>
           <Feather name="search" size={16} color={theme.colors.inkSubtle} style={styles.searchIcon} />
@@ -102,13 +107,13 @@ export default function CommunitiesScreen() {
         <View style={styles.centerContainer}>
           <Text style={styles.errorTitle}>Failed to load</Text>
           <Text style={styles.errorSubtitle}>{errorMessage}</Text>
-          <TouchableOpacity
-            style={styles.retryButton}
+          <Button
+            title="Try again"
+            variant="secondary"
+            size="sm"
             onPress={() => fetchCommunities()}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.retryButtonText}>Try again</Text>
-          </TouchableOpacity>
+            style={{ marginTop: 8 }}
+          />
         </View>
       ) : (
         <FlatList
@@ -153,37 +158,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  header: {
+  searchContainer: {
+    paddingHorizontal: theme.spacing.xl,
+    paddingBottom: theme.spacing.md,
     backgroundColor: theme.colors.background,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
-    paddingHorizontal: theme.spacing.xl,
-    paddingTop: theme.spacing.sm,
-    paddingBottom: theme.spacing.md,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: theme.spacing.md,
-  },
-  pageTitle: {
-    ...theme.typography.hero,
-    fontSize: 24,
-    color: theme.colors.ink,
-  },
-  createButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.radii.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  createButtonText: {
-    ...theme.typography.captionMedium,
-    color: theme.colors.primaryContrast,
   },
   searchBar: {
     flexDirection: 'row',

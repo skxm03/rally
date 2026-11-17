@@ -20,6 +20,7 @@ import { UserProfile } from '../../src/types/user';
 import { PostCard } from '../../src/components/PostCard';
 import { CommunityCard } from '../../src/components/CommunityCard';
 import { UserCard } from '../../src/components/UserCard';
+import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { theme } from '../../src/theme';
 
 export default function SearchScreen() {
@@ -97,8 +98,11 @@ export default function SearchScreen() {
   const hasAnyResults = posts.length > 0 || communities.length > 0 || users.length > 0;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* Top Search Input */}
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      {/* Top Header */}
+      <ScreenHeader title="Search" borderBottom={false} />
+
+      {/* Search Input & Filters */}
       <View style={styles.header}>
         <View style={styles.searchBar}>
           <Feather name="search" size={17} color={theme.colors.inkSubtle} style={styles.searchIcon} />

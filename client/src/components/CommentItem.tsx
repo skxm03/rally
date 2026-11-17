@@ -14,6 +14,7 @@ import { CommentNode } from '../types/comment';
 import { commentApi } from '../api/comments';
 import { formatRelativeTime } from '../utils/date';
 import { useAuth } from '../context/auth';
+import { Button } from './Button';
 import { theme } from '../theme';
 
 interface CommentItemProps {
@@ -176,27 +177,22 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             editable={!isSavingEdit}
           />
           <View style={styles.editActions}>
-            <TouchableOpacity
+            <Button
+              title="Cancel"
+              variant="ghost"
+              size="sm"
               onPress={() => {
                 setEditContent(comment.content);
                 setIsEditing(false);
               }}
-              style={styles.cancelEditButton}
               disabled={isSavingEdit}
-            >
-              <Text style={styles.cancelEditText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            />
+            <Button
+              title="Save"
+              size="sm"
+              loading={isSavingEdit}
               onPress={handleSaveEdit}
-              style={styles.saveEditButton}
-              disabled={isSavingEdit}
-            >
-              {isSavingEdit ? (
-                <ActivityIndicator size="small" color={theme.colors.primaryContrast} />
-              ) : (
-                <Text style={styles.saveEditText}>Save</Text>
-              )}
-            </TouchableOpacity>
+            />
           </View>
         </View>
       ) : (

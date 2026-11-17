@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,18 +11,24 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
 import { postApi } from '../../src/api/posts';
 import { communityApi } from '../../src/api/communities';
+import { Button } from '../../src/components/Button';
+import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { Community } from '../../src/types/community';
 import { theme } from '../../src/theme';
 
 export default function CreatePostScreen() {
   const router = useRouter();
+  const { communityId, communityName } = useLocalSearchParams<{
+    communityId?: string;
+    communityName?: string;
+  }>();
 
   const [communities, setCommunities] = useState<Community[]>([]);
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
@@ -35,28 +41,47 @@ export default function CreatePostScreen() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadCommunities() {
-      try {
-        setIsLoadingCommunities(true);
-        const list = await communityApi.getCommunities();
-        setCommunities(list);
+  const loadCommunities = useCallback(async () => {
+    try {
+      setIsLoadingCommunities(true);
+      const list = await communityApi.getCommunities();
+      setCommunities(list);
 
-        // Pre-select first joined community if available, else first in list
-        const firstJoined = list.find((c) => c.isMember);
-        if (firstJoined) {
-          setSelectedCommunity(firstJoined);
-        } else if (list.length > 0) {
-          setSelectedCommunity(list[0]);
+      // 1. If explicit communityId or communityName query param is provided, select it
+      if (communityId || communityName) {
+        const matching = list.find(
+          (c) =>
+            (communityId && String(c.id) === String(communityId)) ||
+            (communityName && c.name.toLowerCase() === communityName.toLowerCase())
+        );
+        if (matching) {
+          setSelectedCommunity(matching);
+          return;
         }
-      } catch {
-        setErrorMessage('Failed to load communities.');
-      } finally {
-        setIsLoadingCommunities(false);
       }
+
+      // 2. Otherwise retain currently selected community if still in the list, else default
+      setSelectedCommunity((prev) => {
+        if (prev) {
+          const stillThere = list.find((c) => c.id === prev.id);
+          if (stillThere) return stillThere;
+        }
+        const firstJoined = list.find((c) => c.isMember);
+        return firstJoined || (list.length > 0 ? list[0] : null);
+      });
+    } catch {
+      setErrorMessage('Failed to load communities.');
+    } finally {
+      setIsLoadingCommunities(false);
     }
-    loadCommunities();
-  }, []);
+  }, [communityId, communityName]);
+
+  // Re-fetch communities whenever this screen gains focus (e.g. after returning from Community Creation)
+  useFocusEffect(
+    useCallback(() => {
+      loadCommunities();
+    }, [loadCommunities])
+  );
 
   const handlePickImage = async () => {
     try {
@@ -144,22 +169,20 @@ export default function CreatePostScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.topBar}>
-        <Text style={styles.topBarTitle}>New Post</Text>
-        <TouchableOpacity
-          style={[styles.publishButton, isSubmitting && styles.buttonDisabled]}
-          onPress={handlePublish}
-          disabled={isSubmitting || isLoadingCommunities}
-          activeOpacity={0.8}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator size="small" color={theme.colors.primaryContrast} />
-          ) : (
-            <Text style={styles.publishButtonText}>Publish</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      {/* Top Header */}
+      <ScreenHeader
+        title="New Post"
+        rightAction={
+          <Button
+            title="Publish"
+            size="sm"
+            loading={isSubmitting}
+            disabled={isLoadingCommunities}
+            onPress={handlePublish}
+          />
+        }
+      />
 
       <KeyboardAvoidingView
         style={styles.container}
@@ -184,13 +207,42 @@ export default function CreatePostScreen() {
 
           {/* Community Selector */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Community</Text>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionLabel}>Community</Text>
+              {communities.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => router.push('/community/create')}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.newCommunityLink}>+ New</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
             {isLoadingCommunities ? (
               <ActivityIndicator size="small" color={theme.colors.inkSecondary} />
             ) : communities.length === 0 ? (
-              <Text style={styles.noCommunityText}>
-                No communities found. Please create or explore communities first.
-              </Text>
+              <View style={styles.emptyCommunitiesContainer}>
+                <Text style={styles.noCommunityText}>
+                  No communities found. Create one or refresh to start posting.
+                </Text>
+                <View style={styles.emptyActionsRow}>
+                  <Button
+                    title="Create Community"
+                    size="sm"
+                    icon={<Feather name="plus" size={14} color={theme.colors.primaryContrast} />}
+                    onPress={() => router.push('/community/create')}
+                  />
+
+                  <Button
+                    title="Refresh"
+                    variant="secondary"
+                    size="sm"
+                    icon={<Feather name="refresh-cw" size={14} color={theme.colors.ink} />}
+                    onPress={loadCommunities}
+                  />
+                </View>
+              </View>
             ) : (
               <ScrollView
                 horizontal
@@ -289,15 +341,14 @@ export default function CreatePostScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity
-              style={styles.addImageButton}
+            <Button
+              title="Add photo"
+              variant="secondary"
+              size="md"
+              icon={<Feather name="image" size={16} color={theme.colors.ink} />}
               onPress={handlePickImage}
               disabled={isSubmitting}
-              activeOpacity={0.7}
-            >
-              <Feather name="image" size={18} color={theme.colors.ink} />
-              <Text style={styles.addImageText}>Add photo</Text>
-            </TouchableOpacity>
+            />
           )}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -374,10 +425,61 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: theme.spacing.xl,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
   sectionLabel: {
     ...theme.typography.captionMedium,
     color: theme.colors.inkSecondary,
-    marginBottom: 6,
+  },
+  newCommunityLink: {
+    ...theme.typography.captionMedium,
+    color: theme.colors.ink,
+    textDecorationLine: 'underline',
+  },
+  emptyCommunitiesContainer: {
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    borderWidth: 1,
+    borderRadius: theme.radii.md,
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
+  },
+  emptyActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  emptyCreateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.radii.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  emptyCreateButtonText: {
+    ...theme.typography.captionMedium,
+    color: theme.colors.primaryContrast,
+  },
+  emptyRefreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: theme.colors.background,
+    borderColor: theme.colors.border,
+    borderWidth: 1,
+    borderRadius: theme.radii.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  emptyRefreshButtonText: {
+    ...theme.typography.captionMedium,
+    color: theme.colors.ink,
   },
   communityScroll: {
     gap: theme.spacing.sm,

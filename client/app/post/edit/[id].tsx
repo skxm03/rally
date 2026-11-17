@@ -18,6 +18,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
 import { postApi } from '../../../src/api/posts';
 import { api } from '../../../src/api/client';
+import { Button } from '../../../src/components/Button';
+import { ScreenHeader } from '../../../src/components/ScreenHeader';
 import { Post } from '../../../src/types/post';
 import { theme } from '../../../src/theme';
 
@@ -121,12 +123,7 @@ export default function EditPostScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Feather name="arrow-left" size={20} color={theme.colors.ink} />
-          </TouchableOpacity>
-          <Text style={styles.topBarTitle}>Edit Post</Text>
-        </View>
+        <ScreenHeader title="Edit Post" showBack />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="small" color={theme.colors.ink} />
         </View>
@@ -137,12 +134,7 @@ export default function EditPostScreen() {
   if (errorMessage && !post) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Feather name="arrow-left" size={20} color={theme.colors.ink} />
-          </TouchableOpacity>
-          <Text style={styles.topBarTitle}>Edit Post</Text>
-        </View>
+        <ScreenHeader title="Edit Post" showBack />
         <View style={styles.centerContainer}>
           <Text style={styles.errorText}>{errorMessage}</Text>
         </View>
@@ -154,31 +146,19 @@ export default function EditPostScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.topBar}>
-        <View style={styles.leftNav}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-            disabled={isSaving}
-          >
-            <Feather name="arrow-left" size={20} color={theme.colors.ink} />
-          </TouchableOpacity>
-          <Text style={styles.topBarTitle}>Edit Post</Text>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.saveButton, isSaving && styles.buttonDisabled]}
-          onPress={handleSave}
-          disabled={isSaving}
-          activeOpacity={0.8}
-        >
-          {isSaving ? (
-            <ActivityIndicator size="small" color={theme.colors.primaryContrast} />
-          ) : (
-            <Text style={styles.saveButtonText}>Save</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="Edit Post"
+        showBack
+        onBack={() => !isSaving && router.back()}
+        rightAction={
+          <Button
+            title="Save"
+            size="sm"
+            loading={isSaving}
+            onPress={handleSave}
+          />
+        }
+      />
 
       <KeyboardAvoidingView
         style={styles.container}

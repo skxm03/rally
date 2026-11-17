@@ -22,6 +22,8 @@ import { api } from '../../src/api/client';
 import { Post } from '../../src/types/post';
 import { CommentNode } from '../../src/types/comment';
 import { CommentItem } from '../../src/components/CommentItem';
+import { Button } from '../../src/components/Button';
+import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { formatRelativeTime } from '../../src/utils/date';
 import { useAuth } from '../../src/context/auth';
 import { theme } from '../../src/theme';
@@ -224,11 +226,7 @@ export default function PostDetailScreen() {
   if (errorMessage || !post) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.topNav}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Feather name="arrow-left" size={20} color={theme.colors.ink} />
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader title="Post" showBack />
         <View style={styles.centerContainer}>
           <Text style={styles.errorTitle}>Post Unavailable</Text>
           <Text style={styles.errorSubtitle}>{errorMessage || 'Post not found.'}</Text>
@@ -245,17 +243,11 @@ export default function PostDetailScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Top Bar */}
-      <View style={styles.topNav}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Feather name="arrow-left" size={20} color={theme.colors.ink} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => router.push(`/community/${communityName}`)}
-          style={styles.communityNav}
-        >
-          <Text style={styles.topNavTitle}>c/{communityName}</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title={`c/${communityName}`}
+        showBack
+        onTitlePress={() => router.push(`/community/${communityName}`)}
+      />
 
       <KeyboardAvoidingView
         style={styles.container}
@@ -417,21 +409,13 @@ export default function PostDetailScreen() {
               editable={!isSubmittingComment}
             />
 
-            <TouchableOpacity
-              style={[
-                styles.sendButton,
-                (!commentText.trim() || isSubmittingComment) && styles.sendButtonDisabled,
-              ]}
+            <Button
+              size="sm"
+              icon={<Feather name="send" size={15} color={theme.colors.primaryContrast} />}
+              loading={isSubmittingComment}
+              disabled={!commentText.trim()}
               onPress={handleSendComment}
-              disabled={!commentText.trim() || isSubmittingComment}
-              activeOpacity={0.8}
-            >
-              {isSubmittingComment ? (
-                <ActivityIndicator size="small" color={theme.colors.primaryContrast} />
-              ) : (
-                <Feather name="send" size={16} color={theme.colors.primaryContrast} />
-              )}
-            </TouchableOpacity>
+            />
           </View>
         </View>
       </KeyboardAvoidingView>

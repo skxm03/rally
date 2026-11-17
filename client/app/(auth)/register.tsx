@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/auth';
+import { Button } from '../../src/components/Button';
 import { theme } from '../../src/theme';
 
 export default function RegisterScreen() {
@@ -152,18 +153,14 @@ export default function RegisterScreen() {
               />
             </View>
 
-            <TouchableOpacity
-              style={[styles.button, isSubmitting && styles.buttonDisabled]}
+            <Button
+              title="Create account"
+              size="lg"
+              fullWidth
+              loading={isSubmitting}
               onPress={handleSubmit}
-              disabled={isSubmitting}
-              activeOpacity={0.8}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color={theme.colors.primaryContrast} />
-              ) : (
-                <Text style={styles.buttonText}>Create account</Text>
-              )}
-            </TouchableOpacity>
+              style={{ marginTop: theme.spacing.sm }}
+            />
           </View>
 
           <View style={styles.footer}>

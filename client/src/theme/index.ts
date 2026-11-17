@@ -35,6 +35,18 @@ export const theme = {
       lineHeight: 34,
       letterSpacing: -0.5,
     },
+    pageTitle: {
+      fontSize: 24,
+      fontWeight: '700' as const,
+      lineHeight: 30,
+      letterSpacing: -0.4,
+    },
+    navTitle: {
+      fontSize: 17,
+      fontWeight: '600' as const,
+      lineHeight: 22,
+      letterSpacing: -0.2,
+    },
     title: {
       fontSize: 20,
       fontWeight: '600' as const,

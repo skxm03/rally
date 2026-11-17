@@ -13,6 +13,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { PostCard } from '../../src/components/PostCard';
+import { Button } from '../../src/components/Button';
+import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { communityApi } from '../../src/api/communities';
 import { Community } from '../../src/types/community';
 import { Post, FeedSort } from '../../src/types/post';
@@ -157,31 +159,31 @@ export default function CommunityDetailScreen() {
             </Text>
           </View>
 
-          <TouchableOpacity
-            style={[
-              styles.joinButton,
-              community.isMember ? styles.buttonJoined : styles.buttonJoin,
-            ]}
-            onPress={handleToggleMembership}
-            disabled={isTogglingMember}
-            activeOpacity={0.8}
-          >
-            {isTogglingMember ? (
-              <ActivityIndicator
-                size="small"
-                color={community.isMember ? theme.colors.ink : theme.colors.primaryContrast}
-              />
-            ) : (
-              <Text
-                style={[
-                  styles.joinButtonText,
-                  community.isMember ? styles.textJoined : styles.textJoin,
-                ]}
-              >
-                {community.isMember ? 'Joined' : 'Join'}
-              </Text>
-            )}
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <Button
+              title={community.isMember ? 'Joined' : 'Join'}
+              variant={community.isMember ? 'secondary' : 'primary'}
+              size="sm"
+              loading={isTogglingMember}
+              onPress={handleToggleMembership}
+            />
+
+            <Button
+              title="Post"
+              variant="secondary"
+              size="sm"
+              icon={<Feather name="plus" size={14} color={theme.colors.ink} />}
+              onPress={() =>
+                router.push({
+                  pathname: '/(tabs)/create',
+                  params: {
+                    communityId: String(community.id),
+                    communityName: community.name,
+                  },
+                })
+              }
+            />
+          </View>
         </View>
 
         {community.description ? (
@@ -215,11 +217,7 @@ export default function CommunityDetailScreen() {
   if (isLoadingCommunity && !community) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.topNav}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Feather name="arrow-left" size={20} color={theme.colors.ink} />
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader title={`c/${name || '...'}`} showBack />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="small" color={theme.colors.ink} />
         </View>
@@ -230,11 +228,7 @@ export default function CommunityDetailScreen() {
   if (errorMessage && !community) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.topNav}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Feather name="arrow-left" size={20} color={theme.colors.ink} />
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader title={`c/${name || '...'}`} showBack />
         <View style={styles.centerContainer}>
           <Text style={styles.errorTitle}>Community Not Found</Text>
           <Text style={styles.errorSubtitle}>{errorMessage}</Text>
@@ -246,12 +240,7 @@ export default function CommunityDetailScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Back Top Nav */}
-      <View style={styles.topNav}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Feather name="arrow-left" size={20} color={theme.colors.ink} />
-        </TouchableOpacity>
-        <Text style={styles.topNavTitle}>c/{name}</Text>
-      </View>
+      <ScreenHeader title={`c/${name}`} showBack />
 
       <FlatList
         data={posts}
@@ -356,11 +345,16 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     marginBottom: theme.spacing.md,
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   joinButton: {
     borderRadius: theme.radii.sm,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 7,
-    minWidth: 80,
+    minWidth: 70,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -379,6 +373,21 @@ const styles = StyleSheet.create({
     color: theme.colors.primaryContrast,
   },
   textJoined: {
+    color: theme.colors.ink,
+  },
+  postButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    borderWidth: 1,
+    borderRadius: theme.radii.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  postButtonText: {
+    ...theme.typography.captionMedium,
     color: theme.colors.ink,
   },
   sortRow: {

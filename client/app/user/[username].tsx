@@ -15,6 +15,7 @@ import { userApi } from '../../src/api/users';
 import { UserProfile } from '../../src/types/user';
 import { Post } from '../../src/types/post';
 import { PostCard } from '../../src/components/PostCard';
+import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { formatRelativeTime } from '../../src/utils/date';
 import { theme } from '../../src/theme';
 
@@ -118,11 +119,7 @@ export default function UserProfileScreen() {
   if (isLoading && !profile) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.topNav}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Feather name="arrow-left" size={20} color={theme.colors.ink} />
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader title={`u/${username || '...'}`} showBack />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="small" color={theme.colors.ink} />
         </View>
@@ -133,11 +130,7 @@ export default function UserProfileScreen() {
   if (errorMessage && !profile) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.topNav}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Feather name="arrow-left" size={20} color={theme.colors.ink} />
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader title={`u/${username || '...'}`} showBack />
         <View style={styles.centerContainer}>
           <Text style={styles.errorTitle}>Profile Not Found</Text>
           <Text style={styles.errorSubtitle}>{errorMessage}</Text>
@@ -148,12 +141,7 @@ export default function UserProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.topNav}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Feather name="arrow-left" size={20} color={theme.colors.ink} />
-        </TouchableOpacity>
-        <Text style={styles.topNavTitle}>u/{username}</Text>
-      </View>
+      <ScreenHeader title={`u/${username}`} showBack />
 
       {activeTab === 'posts' ? (
         <FlatList

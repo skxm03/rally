@@ -8,13 +8,19 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import { PostCard } from '../../src/components/PostCard';
+import { Button } from '../../src/components/Button';
 import { feedApi } from '../../src/api/feed';
+import { communityApi } from '../../src/api/communities';
 import { Post, FeedSort, FeedType } from '../../src/types/post';
 import { theme } from '../../src/theme';
 
 export default function FeedScreen() {
+  const router = useRouter();
+
   const [feedType, setFeedType] = useState<FeedType>('home');
   const [feedSort, setFeedSort] = useState<FeedSort>('new');
 
@@ -24,7 +30,17 @@ export default function FeedScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasJoinedCommunities, setHasJoinedCommunities] = useState<boolean | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const checkMemberships = useCallback(async () => {
+    try {
+      const comms = await communityApi.getCommunities();
+      setHasJoinedCommunities(comms.some((c) => c.isMember));
+    } catch {
+      setHasJoinedCommunities(null);
+    }
+  }, []);
 
   const fetchFeed = useCallback(
     async (targetPage = 1, isRefresh = false) => {
@@ -59,11 +75,19 @@ export default function FeedScreen() {
   );
 
   useEffect(() => {
+    checkMemberships();
     fetchFeed(1);
-  }, [fetchFeed]);
+  }, [checkMemberships, fetchFeed]);
+
+  useFocusEffect(
+    useCallback(() => {
+      checkMemberships();
+    }, [checkMemberships])
+  );
 
   const handleRefresh = () => {
     setIsRefreshing(true);
+    checkMemberships();
     fetchFeed(1, true);
   };
 
@@ -97,15 +121,47 @@ export default function FeedScreen() {
     );
   };
 
+  const renderHeaderNotice = () => {
+    if (feedType === 'home' && hasJoinedCommunities === false) {
+      return (
+        <View style={styles.joinedBanner}>
+          <View style={styles.joinedBannerLeft}>
+            <Feather
+              name="compass"
+              size={16}
+              color={theme.colors.ink}
+              style={{ marginTop: 2, marginRight: 8 }}
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.joinedBannerTitle}>Your feed is empty</Text>
+              <Text style={styles.joinedBannerText}>
+                You haven't joined any communities yet. Showing global posts until you join.
+              </Text>
+            </View>
+          </View>
+          <Button
+            title="Explore"
+            size="sm"
+            onPress={() => router.push('/(tabs)/communities')}
+          />
+        </View>
+      );
+    }
+    return null;
+  };
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {/* Top Header Bar */}
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <Text style={styles.brandTitle}>Rally</Text>
+          <Text style={styles.feedScopeSubtitle}>
+            {feedType === 'home' ? 'Communities you follow' : 'All discussions on Rally'}
+          </Text>
         </View>
 
-        {/* Home / Popular Segmented Switch */}
+        {/* Scope Segmented Switch: Home vs All */}
         <View style={styles.segmentContainer}>
           <TouchableOpacity
             style={[styles.segmentTab, feedType === 'home' && styles.segmentTabActive]}
@@ -137,7 +193,7 @@ export default function FeedScreen() {
                 feedType === 'popular' && styles.segmentLabelActive,
               ]}
             >
-              Popular
+              All
             </Text>
           </TouchableOpacity>
         </View>
@@ -171,6 +227,7 @@ export default function FeedScreen() {
         <FlatList
           data={posts}
           keyExtractor={(item) => String(item.id)}
+          ListHeaderComponent={renderHeaderNotice}
           renderItem={({ item }) => (
             <PostCard
               post={item}
@@ -201,7 +258,7 @@ export default function FeedScreen() {
               </Text>
               <Text style={styles.emptySubtitle}>
                 {feedType === 'home'
-                  ? 'Join communities to see posts here, or switch to Popular to explore global discussions.'
+                  ? 'Join communities in Explore to populate your Home feed, or switch to All.'
                   : 'Check back soon for new community posts.'}
               </Text>
             </View>
@@ -226,6 +283,9 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.sm,
   },
   titleRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
     marginBottom: theme.spacing.sm,
   },
   brandTitle: {
@@ -234,6 +294,11 @@ const styles = StyleSheet.create({
     color: theme.colors.ink,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
+  },
+  feedScopeSubtitle: {
+    ...theme.typography.caption,
+    fontSize: 12,
+    color: theme.colors.inkSecondary,
   },
   segmentContainer: {
     flexDirection: 'row',
@@ -285,6 +350,44 @@ const styles = StyleSheet.create({
   sortTextActive: {
     color: theme.colors.ink,
     fontWeight: '600',
+  },
+  joinedBanner: {
+    backgroundColor: theme.colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  joinedBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flex: 1,
+    marginRight: theme.spacing.md,
+  },
+  joinedBannerTitle: {
+    ...theme.typography.captionMedium,
+    color: theme.colors.ink,
+    marginBottom: 2,
+  },
+  joinedBannerText: {
+    ...theme.typography.caption,
+    fontSize: 12,
+    color: theme.colors.inkSecondary,
+    lineHeight: 16,
+  },
+  joinedBannerButton: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.radii.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  joinedBannerButtonText: {
+    ...theme.typography.captionMedium,
+    fontSize: 12,
+    color: theme.colors.primaryContrast,
   },
   centerContainer: {
     flex: 1,

@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Community } from '../types/community';
 import { communityApi } from '../api/communities';
+import { Button } from './Button';
 import { theme } from '../theme';
 
 interface CommunityCardProps {
@@ -82,23 +83,14 @@ export const CommunityCard: React.FC<CommunityCardProps> = ({
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={[styles.actionButton, isMember ? styles.buttonJoined : styles.buttonJoin]}
+        <Button
+          title={isMember ? 'Joined' : 'Join'}
+          variant={isMember ? 'secondary' : 'primary'}
+          size="sm"
+          loading={isUpdating}
           onPress={handleToggleMembership}
-          disabled={isUpdating}
-          activeOpacity={0.8}
-        >
-          {isUpdating ? (
-            <ActivityIndicator
-              size="small"
-              color={isMember ? theme.colors.ink : theme.colors.primaryContrast}
-            />
-          ) : (
-            <Text style={[styles.actionButtonText, isMember ? styles.textJoined : styles.textJoin]}>
-              {isMember ? 'Joined' : 'Join'}
-            </Text>
-          )}
-        </TouchableOpacity>
+          style={styles.actionButton}
+        />
       </View>
 
       {community.description ? (

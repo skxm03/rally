@@ -15,6 +15,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/auth';
 import { userApi } from '../../src/api/users';
+import { Button } from '../../src/components/Button';
+import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { theme } from '../../src/theme';
 
 export default function ProfileScreen() {
@@ -94,18 +96,20 @@ export default function ProfileScreen() {
     : null;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <Text style={styles.pageTitle}>Profile</Text>
-        <TouchableOpacity
-          style={styles.editProfileButton}
-          onPress={openEditModal}
-          activeOpacity={0.7}
-        >
-          <Feather name="edit" size={14} color={theme.colors.ink} style={{ marginRight: 4 }} />
-          <Text style={styles.editProfileButtonText}>Edit</Text>
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      {/* Top Header */}
+      <ScreenHeader
+        title="Profile"
+        rightAction={
+          <Button
+            title="Edit"
+            variant="secondary"
+            size="sm"
+            icon={<Feather name="edit" size={13} color={theme.colors.ink} />}
+            onPress={openEditModal}
+          />
+        }
+      />
 
       <View style={styles.content}>
         <View style={styles.profileSection}>
@@ -140,18 +144,14 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.actionContainer}>
-          <TouchableOpacity
-            style={styles.logoutButton}
+          <Button
+            title="Sign out"
+            variant="danger"
+            size="lg"
+            fullWidth
+            loading={isLoggingOut}
             onPress={handleLogout}
-            disabled={isLoggingOut}
-            activeOpacity={0.8}
-          >
-            {isLoggingOut ? (
-              <ActivityIndicator size="small" color={theme.colors.error} />
-            ) : (
-              <Text style={styles.logoutButtonText}>Sign out</Text>
-            )}
-          </TouchableOpacity>
+          />
         </View>
       </View>
 
@@ -168,25 +168,21 @@ export default function ProfileScreen() {
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           >
             <View style={styles.modalHeader}>
-              <TouchableOpacity
+              <Button
+                title="Cancel"
+                variant="ghost"
+                size="sm"
                 onPress={() => setIsEditModalOpen(false)}
                 disabled={isSavingProfile}
-                style={styles.modalCancel}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
+              />
               <Text style={styles.modalTitle}>Edit Profile</Text>
-              <TouchableOpacity
+              <Button
+                title="Save"
+                variant="primary"
+                size="sm"
+                loading={isSavingProfile}
                 onPress={handleSaveProfile}
-                disabled={isSavingProfile}
-                style={styles.modalSave}
-              >
-                {isSavingProfile ? (
-                  <ActivityIndicator size="small" color={theme.colors.ink} />
-                ) : (
-                  <Text style={styles.modalSaveText}>Save</Text>
-                )}
-              </TouchableOpacity>
+              />
             </View>
 
             <View style={styles.modalBody}>

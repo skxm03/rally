@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/auth';
+import { Button } from '../../src/components/Button';
 import { theme } from '../../src/theme';
 
 export default function LoginScreen() {
@@ -102,18 +103,14 @@ export default function LoginScreen() {
               />
             </View>
 
-            <TouchableOpacity
-              style={[styles.button, isSubmitting && styles.buttonDisabled]}
+            <Button
+              title="Sign in"
+              size="lg"
+              fullWidth
+              loading={isSubmitting}
               onPress={handleSubmit}
-              disabled={isSubmitting}
-              activeOpacity={0.8}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color={theme.colors.primaryContrast} />
-              ) : (
-                <Text style={styles.buttonText}>Sign in</Text>
-              )}
-            </TouchableOpacity>
+              style={{ marginTop: theme.spacing.sm }}
+            />
           </View>
 
           <View style={styles.footer}>
