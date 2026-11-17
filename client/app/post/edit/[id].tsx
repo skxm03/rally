@@ -134,6 +134,22 @@ export default function EditPostScreen() {
     );
   }
 
+  if (errorMessage && !post) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.topBar}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Feather name="arrow-left" size={20} color={theme.colors.ink} />
+          </TouchableOpacity>
+          <Text style={styles.topBarTitle}>Edit Post</Text>
+        </View>
+        <View style={styles.centerContainer}>
+          <Text style={styles.errorText}>{errorMessage}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const resolvedExistingImage = api.getMediaUrl(existingImageUrl);
 
   return (

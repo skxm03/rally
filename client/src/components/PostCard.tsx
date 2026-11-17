@@ -113,6 +113,14 @@ export const PostCard: React.FC<PostCardProps> = ({
     );
   };
 
+  const handleCardPress = () => {
+    if (onPress) {
+      onPress();
+    } else {
+      router.push(`/post/${post.id}`);
+    }
+  };
+
   const resolvedImageUrl = api.getMediaUrl(post.imageUrl);
   const communityName = post.community?.name || 'community';
   const authorName = post.author?.displayName || post.author?.username || 'anonymous';
@@ -121,8 +129,8 @@ export const PostCard: React.FC<PostCardProps> = ({
   return (
     <TouchableOpacity
       style={styles.card}
-      onPress={onPress}
-      activeOpacity={onPress ? 0.75 : 1}
+      onPress={handleCardPress}
+      activeOpacity={0.75}
     >
       {/* Context line: Community, author, time, author controls */}
       <View style={styles.metaRow}>
@@ -134,7 +142,12 @@ export const PostCard: React.FC<PostCardProps> = ({
             <Text style={styles.communityName}>c/{communityName}</Text>
           </TouchableOpacity>
           <Text style={styles.metaDivider}>·</Text>
-          <Text style={styles.authorName}>u/{authorName}</Text>
+          <TouchableOpacity
+            onPress={() => router.push(`/user/${authorName}`)}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          >
+            <Text style={styles.authorName}>u/{authorName}</Text>
+          </TouchableOpacity>
           {relativeTime ? (
             <>
               <Text style={styles.metaDivider}>·</Text>
