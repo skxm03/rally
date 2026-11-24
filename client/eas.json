@@ -11,10 +11,16 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://rally-zwmu.onrender.com/api"
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://rally-zwmu.onrender.com/api"
+      }
     }
   },
   "submit": {
